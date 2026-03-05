@@ -1,0 +1,27 @@
+# Binaries
+aelora-server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+/bin/
+/dist/
+
+# Go coverage
+*.out
+coverage.html
+
+# Secrets / local env
+.env
+
+# Editor
+.idea/
+.vscode/
+
+# AI / agent context (local only)
+codex.md
+AGENTS.md
+CLAUDE.md
+.cursor/

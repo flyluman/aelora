@@ -1,0 +1,7 @@
+resources:
+  - configmap.yaml
+  - secret.example.yaml
+  - server-deployment.yaml
+  - server-service.yaml
+  - migration-job.yaml
+

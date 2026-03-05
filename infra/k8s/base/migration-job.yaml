@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: aelora-migrate
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: aelora/server:latest
+          command: ["/usr/local/bin/aelora-server", "migrate"]
+          envFrom:
+            - configMapRef:
+                name: aelora-config
+            - secretRef:
+                name: aelora-secret
+

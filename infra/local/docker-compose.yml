@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: aelora-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: aelora
+    ports:
+      - "5432:5432"
+    volumes:
+      - aelora-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d aelora"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: aelora-valkey
+    command: ["valkey-server", "--appendonly", "yes"]
+    volumes:
+      - aelora-valkey-data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  server:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      target: runtime-server
+    container_name: aelora-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    environment:
+      AELORA_APP_ENV: ${AELORA_APP_ENV:-dev}
+      AELORA_HTTP_ADDR: ${AELORA_HTTP_ADDR:-:8080}
+      AELORA_LOG_LEVEL: ${AELORA_LOG_LEVEL:-info}
+      AELORA_SERVICE_NAME: ${AELORA_SERVICE_NAME:-aelora}
+      AELORA_WS_READ_LIMIT: ${AELORA_WS_READ_LIMIT:-4096}
+      AELORA_WS_CHECK_ORIGIN: ${AELORA_WS_CHECK_ORIGIN:-false}
+      AELORA_AUTH_ENABLED: ${AELORA_AUTH_ENABLED:-false}
+      AELORA_COGNITO_REGION: ${AELORA_COGNITO_REGION:-}
+      AELORA_COGNITO_USER_POOL_ID: ${AELORA_COGNITO_USER_POOL_ID:-}
+      AELORA_COGNITO_APP_CLIENT_ID: ${AELORA_COGNITO_APP_CLIENT_ID:-}
+      AELORA_VALKEY_ADDR: ${AELORA_VALKEY_ADDR:-valkey:6379}
+      AELORA_VALKEY_USERNAME: ${AELORA_VALKEY_USERNAME:-}
+      AELORA_VALKEY_PASSWORD: ${AELORA_VALKEY_PASSWORD:-}
+      AELORA_VALKEY_DB: ${AELORA_VALKEY_DB:-0}
+      AELORA_VALKEY_EVENT_STREAM_KEY: ${AELORA_VALKEY_EVENT_STREAM_KEY:-stream:events:message_created}
+      AELORA_VALKEY_ROOM_STREAM_MAXLEN: ${AELORA_VALKEY_ROOM_STREAM_MAXLEN:-20000}
+      AELORA_VALKEY_EVENT_STREAM_MAXLEN: ${AELORA_VALKEY_EVENT_STREAM_MAXLEN:-50000}
+      AELORA_VALKEY_ROOM_ID_SEQUENCE_KEY: ${AELORA_VALKEY_ROOM_ID_SEQUENCE_KEY:-seq:room_id}
+      AELORA_ROOM_ID_XOR_MASK: ${AELORA_ROOM_ID_XOR_MASK:-134454654780389}
+      AELORA_POSTGRES_DSN: ${AELORA_POSTGRES_DSN:-postgres://postgres:postgres@postgres:5432/aelora?sslmode=disable}
+      AELORA_POSTGRES_MIGRATIONS_DIR: ${AELORA_POSTGRES_MIGRATIONS_DIR:-migrations/postgres}
+      AELORA_RUN_MIGRATIONS_ON_START: ${AELORA_RUN_MIGRATIONS_ON_START:-true}
+      AELORA_SEND_RATE_LIMIT_PER_SECOND: ${AELORA_SEND_RATE_LIMIT_PER_SECOND:-30}
+      AELORA_SEND_RATE_LIMIT_TTL_SECONDS: ${AELORA_SEND_RATE_LIMIT_TTL_SECONDS:-300}
+      AELORA_PUSH_ANDROID_ENDPOINT: ${AELORA_PUSH_ANDROID_ENDPOINT:-}
+      AELORA_PUSH_IOS_ENDPOINT: ${AELORA_PUSH_IOS_ENDPOINT:-}
+      AELORA_PUSH_AUTH_TOKEN: ${AELORA_PUSH_AUTH_TOKEN:-}
+      AELORA_PUSH_HTTP_TIMEOUT_MS: ${AELORA_PUSH_HTTP_TIMEOUT_MS:-2000}
+      AELORA_FRONTEND_SIDECAR_ENABLED: ${AELORA_FRONTEND_SIDECAR_ENABLED:-false}
+      AELORA_FRONTEND_ADDR: ${AELORA_FRONTEND_ADDR:-:8081}
+    ports:
+      - "8080:8080"
+    command: ["serve"]
+
+volumes:
+  aelora-postgres-data:
+  aelora-valkey-data:

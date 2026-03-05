@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aelora
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aelora
+  template:
+    metadata:
+      labels:
+        app: aelora
+    spec:
+      containers:
+        - name: server
+          image: aelora/server:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: aelora-config
+            - secretRef:
+                name: aelora-secret
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20

@@ -1,0 +1,347 @@
+openapi: 3.1.0
+info:
+  title: Aelora API
+  version: 1.0.0
+  description: Real-time messaging API
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+paths:
+  /v1/rooms:
+    post:
+      summary: Create a room
+      operationId: createRoom
+      tags: [Rooms]
+      security:
+        - bearerAuth: []
+        - xUserId: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '201':
+          description: Room created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomMembershipResponse'
+
+  /v1/rooms/{room_id}/members/{user_id}:
+    post:
+      summary: Add a member to a room
+      operationId: joinRoom
+      tags: [Rooms]
+      security:
+        - bearerAuth: []
+        - xUserId: []
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomMembershipResponse'
+
+  /v1/rooms/{room_id}/messages:
+    post:
+      summary: Send a message to a room
+      operationId: sendMessage
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+        - xUserId: []
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+    get:
+      summary: List messages in a room
+      operationId: listMessages
+      tags: [Messages]
+      security:
+        - bearerAuth: []
+        - xUserId: []
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Message list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMessagesResponse'
+
+  /v1/users/me/devices/{device_id}/push-token:
+    put:
+      summary: Register a push token for a device
+      operationId: registerPushToken
+      tags: [Push]
+      security:
+        - bearerAuth: []
+        - xUserId: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterPushTokenRequest'
+      responses:
+        '200':
+          description: Push token registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushTokenResponse'
+    delete:
+      summary: Delete a push token for a device
+      operationId: deletePushToken
+      tags: [Push]
+      security:
+        - bearerAuth: []
+        - xUserId: []
+      parameters:
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Push token deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushTokenResponse'
+
+  /livez:
+    get:
+      summary: Liveness probe
+      operationId: livez
+      tags: [Observability]
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /readyz:
+    get:
+      summary: Readiness probe
+      operationId: readyz
+      tags: [Observability]
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service not ready
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    xUserId:
+      type: apiKey
+      in: header
+      name: X-User-ID
+      description: User ID for development (when auth is disabled)
+
+  schemas:
+    CreateRoomRequest:
+      type: object
+      properties:
+        member_ids:
+          type: array
+          items:
+            type: string
+      required: [member_ids]
+
+    RoomMembershipResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            room_id:
+              type: string
+            members:
+              type: array
+              items:
+                type: string
+            actor:
+              type: string
+            added_user_id:
+              type: string
+
+    SendMessageRequest:
+      type: object
+      properties:
+        content:
+          type: string
+        client_msg_id:
+          type: string
+        reply_to_message_id:
+          type: string
+      required: [content, client_msg_id]
+
+    MessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/MessageData'
+
+    MessageData:
+      type: object
+      properties:
+        id:
+          type: string
+        room_id:
+          type: string
+        sender_id:
+          type: string
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ListMessagesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            room_id:
+              type: string
+            messages:
+              type: array
+              items:
+                $ref: '#/components/schemas/MessageData'
+            count:
+              type: integer
+            limit:
+              type: integer
+
+    RegisterPushTokenRequest:
+      type: object
+      properties:
+        platform:
+          type: string
+          enum: [android, ios]
+        token:
+          type: string
+      required: [platform, token]
+
+    PushTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user_id:
+              type: string
+            device_id:
+              type: string
+            platform:
+              type: string
+            action:
+              type: string
+
+    StatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+            checks:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  status:
+                    type: string
+                  error:
+                    type: string

@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aelora Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=9" />
+  </head>
+  <body>
+    <main class="layout">
+      <header class="top card">
+        <div class="brand">
+          <p class="eyebrow">Realtime Messaging Console</p>
+          <h1>Aelora Control Console</h1>
+          <p>Local-first command deck for HTTP, WebSocket, load, and operational testing through the helper listener.</p>
+          <div class="headline-badges">
+            <span class="signal-badge">Helper-first</span>
+            <span class="signal-badge">HTTP + WS</span>
+            <span class="signal-badge">Load + Logs</span>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="status-stack">
+            <div class="status-pill" aria-live="polite">
+              <i id="wsDot" class="dot" aria-hidden="true"></i>
+              <span id="sessionWs">disconnected</span>
+            </div>
+            <p id="headerSummary" class="meta-copy">Fill the common context to unlock REST and WebSocket flows.</p>
+          </div>
+          <button id="btnSaveSession" class="btn ghost">Save Session</button>
+        </div>
+      </header>
+
+      <section class="identity card">
+        <div class="identity-layout">
+          <div class="identity-main">
+            <div class="section-head">
+              <h2>Common Context</h2>
+              <p class="helper">Set this once, then move across tabs without re-entering the same local-testing state.</p>
+            </div>
+            <div class="common-grid">
+              <label class="field" for="baseUrl">
+                <span>Base URL</span>
+                <input id="baseUrl" placeholder="http://127.0.0.1:8081" autocomplete="url" />
+              </label>
+              <label class="field" for="userId">
+                <span>User ID</span>
+                <input id="userId" placeholder="u1" autocomplete="username" />
+              </label>
+              <label class="field" for="deviceId">
+                <span>Device ID</span>
+                <input id="deviceId" placeholder="phone1" />
+              </label>
+              <label class="field" for="roomId">
+                <span>Room ID</span>
+                <input id="roomId" placeholder="8-char room id" />
+              </label>
+            </div>
+            <div class="common-actions">
+              <button id="btnConnect" class="btn primary">Connect WS</button>
+              <button id="btnDisconnect" class="btn danger">Disconnect WS</button>
+              <button id="btnUseOrigin" class="btn secondary">Use Current Origin</button>
+              <button id="btnFillDemo" class="btn ghost">Fill Demo Values</button>
+            </div>
+            <p class="helper quick-note">Use the helper origin on `:8081`, keep one saved session, and switch tabs without re-entering the same setup.</p>
+          </div>
+
+          <aside class="context-panel">
+            <div id="contextCard" class="context-card">
+              <span class="context-eyebrow">Session Health</span>
+              <strong id="contextState" class="context-title">Waiting for context</strong>
+              <p id="contextStateDetail" class="context-detail">Add a base URL, user ID, and device ID to unlock every action.</p>
+            </div>
+
+            <div class="context-grid">
+              <article class="context-item">
+                <span>HTTP Base</span>
+                <code id="contextHttpBase">Not set</code>
+              </article>
+              <article class="context-item">
+                <span>WS Endpoint</span>
+                <code id="contextWsUrl">Complete required fields first</code>
+              </article>
+              <article class="context-item">
+                <span>Current Room</span>
+                <code id="contextRoom">No room selected</code>
+              </article>
+              <article class="context-item">
+                <span>Socket State</span>
+                <code id="contextSocket">Disconnected</code>
+              </article>
+            </div>
+
+            <div class="context-actions">
+              <button id="btnCopyWsUrl" class="btn ghost compact wide">Copy WS URL</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <nav class="tabs card" aria-label="Console sections">
+        <button class="tab-btn active" data-tab="rooms" type="button">Rooms</button>
+        <button class="tab-btn" data-tab="messages" type="button">Messages</button>
+        <button class="tab-btn" data-tab="load" type="button">Load Test</button>
+        <button class="tab-btn" data-tab="push" type="button">Push</button>
+        <button class="tab-btn" data-tab="ops" type="button">Ops</button>
+      </nav>
+
+      <section class="console-main">
+        <section class="tab-panels">
+          <section id="tab-rooms" class="tab-panel active" data-tab="rooms">
+          <article class="card panel">
+            <div class="panel-head">
+              <div>
+                <h2>Rooms and Members</h2>
+                <p class="panel-sub">Create rooms and manage participation.</p>
+              </div>
+              <span class="chip">Lifecycle</span>
+            </div>
+
+            <label class="field" for="createMembers">
+              <span>Member IDs (comma separated)</span>
+              <input id="createMembers" placeholder="u2,u3" />
+            </label>
+            <button id="btnCreateRoom" class="btn primary full">Create Room</button>
+            <code class="endpoint">POST /v1/rooms</code>
+
+            <hr />
+
+            <label class="field" for="joinUser">
+              <span>User ID to Add</span>
+              <input id="joinUser" placeholder="u4" />
+            </label>
+            <button id="btnJoin" class="btn primary full">Add Member to Room</button>
+            <code class="endpoint">PUT /v1/rooms/{room_id}/members/{user_id}</code>
+          </article>
+          </section>
+
+          <section id="tab-messages" class="tab-panel" data-tab="messages">
+          <div class="panel-grid">
+            <article class="card panel">
+              <div class="panel-head">
+                <div>
+                  <h2>HTTP Messages</h2>
+                  <p class="panel-sub">Send and query messages over REST.</p>
+                </div>
+                <span class="chip">REST</span>
+              </div>
+
+              <label class="field" for="httpContent">
+                <span>Content</span>
+                <textarea id="httpContent" rows="3" placeholder="hello via HTTP"></textarea>
+              </label>
+              <label class="field" for="httpClientMsgId">
+                <span>Client Message ID</span>
+                <div class="row">
+                  <input id="httpClientMsgId" placeholder="c-http-..." />
+                  <button id="btnGenHttpClientId" class="btn ghost" type="button">Generate</button>
+                </div>
+              </label>
+              <label class="field" for="httpReplyToId">
+                <span>Reply To Message ID (optional)</span>
+                <input id="httpReplyToId" placeholder="message id" />
+              </label>
+              <button id="btnSendHttp" class="btn primary full">Send HTTP Message</button>
+              <code class="endpoint">POST /v1/rooms/{room_id}/messages</code>
+
+              <hr />
+
+              <label class="field" for="listLimit">
+                <span>List Limit</span>
+                <input id="listLimit" type="number" value="50" min="1" max="500" />
+              </label>
+              <label class="field" for="listSince">
+                <span>Since (RFC3339 optional)</span>
+                <input id="listSince" placeholder="2026-04-06T00:00:00Z" />
+              </label>
+              <button id="btnListMessages" class="btn secondary full">List Room Messages</button>
+              <code class="endpoint">GET /v1/rooms/{room_id}/messages</code>
+            </article>
+
+            <article class="card panel">
+              <div class="panel-head">
+                <div>
+                  <h2>WebSocket Actions</h2>
+                  <p class="panel-sub">Low-latency realtime send/sync/ack flow.</p>
+                </div>
+                <span class="chip">Realtime</span>
+              </div>
+
+              <label class="field" for="msgContent">
+                <span>Content</span>
+                <textarea id="msgContent" rows="3" placeholder="hello via WS"></textarea>
+              </label>
+              <label class="field" for="clientMsgId">
+                <span>Client Message ID</span>
+                <div class="row">
+                  <input id="clientMsgId" placeholder="c-ws-..." />
+                  <button id="btnGenClientId" class="btn ghost" type="button">Generate</button>
+                </div>
+              </label>
+              <label class="field" for="replyToId">
+                <span>Reply To Message ID (optional)</span>
+                <input id="replyToId" placeholder="message id" />
+              </label>
+              <button id="btnSendWs" class="btn primary full">WS send_message</button>
+
+              <hr />
+
+              <label class="field" for="lastAck">
+                <span>Last Ack</span>
+                <input id="lastAck" placeholder="0" />
+              </label>
+              <label class="field" for="syncLimit">
+                <span>SYNC Limit</span>
+                <input id="syncLimit" type="number" value="100" min="1" max="500" />
+              </label>
+              <button id="btnSync" class="btn secondary full">WS SYNC</button>
+
+              <label class="field" for="ackStreamId">
+                <span>Stream ID to ACK</span>
+                <input id="ackStreamId" placeholder="1700000000200-0" />
+              </label>
+              <button id="btnAck" class="btn secondary full">WS ACK</button>
+            </article>
+          </div>
+          </section>
+
+          <section id="tab-load" class="tab-panel" data-tab="load">
+          <div class="panel-grid">
+            <article class="card panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Message Load Tester</h2>
+                  <p class="panel-sub">Run controlled HTTP or WebSocket message bursts from the browser.</p>
+                </div>
+                <span class="chip">Stress</span>
+              </div>
+
+              <p class="helper note">Uses the Common Context and current Room ID above. WebSocket mode measures server acceptance latency and requires an active WS connection.</p>
+
+              <div class="field-grid">
+                <label class="field" for="loadMode">
+                  <span>Transport</span>
+                  <select id="loadMode">
+                    <option value="http">HTTP</option>
+                    <option value="ws">WebSocket</option>
+                  </select>
+                </label>
+                <label class="field" for="loadTotal">
+                  <span>Total Requests</span>
+                  <input id="loadTotal" type="number" value="100" min="1" max="10000" />
+                </label>
+                <label class="field" for="loadConcurrency">
+                  <span>Concurrency</span>
+                  <input id="loadConcurrency" type="number" value="10" min="1" max="200" />
+                </label>
+                <label class="field" for="loadDelayMs">
+                  <span>Worker Delay (ms)</span>
+                  <input id="loadDelayMs" type="number" value="0" min="0" max="10000" />
+                </label>
+                <label class="field" for="loadPayloadBytes">
+                  <span>Payload Size</span>
+                  <input id="loadPayloadBytes" type="number" value="64" min="8" max="4000" />
+                </label>
+                <label id="loadAckTimeoutField" class="field" for="loadAckTimeoutMs">
+                  <span>WS Ack Timeout (ms)</span>
+                  <input id="loadAckTimeoutMs" type="number" value="10000" min="100" max="60000" />
+                </label>
+              </div>
+
+              <label class="field" for="loadPrefix">
+                <span>Message Prefix</span>
+                <input id="loadPrefix" placeholder="load-test" value="load-test" />
+              </label>
+
+              <div class="btn-row">
+                <button id="btnStartLoad" class="btn primary">Start Load Test</button>
+                <button id="btnStopLoad" class="btn danger">Stop</button>
+              </div>
+              <code id="loadTransportHint" class="endpoint">HTTP: POST /v1/rooms/{room_id}/messages</code>
+            </article>
+
+            <article class="card panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Run Snapshot</h2>
+                  <p class="panel-sub">Track progress, latency, and the latest failure while the run is active.</p>
+                </div>
+                <span class="chip">Live</span>
+              </div>
+
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <span class="stat-label">State</span>
+                  <strong id="loadState" class="stat-value">idle</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Progress</span>
+                  <strong id="loadProgress" class="stat-value">0 / 0</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Success</span>
+                  <strong id="loadSuccess" class="stat-value">0</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Failed</span>
+                  <strong id="loadFailure" class="stat-value">0</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">In Flight</span>
+                  <strong id="loadInFlight" class="stat-value">0</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Average</span>
+                  <strong id="loadAvg" class="stat-value">0 ms</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">P95</span>
+                  <strong id="loadP95" class="stat-value">0 ms</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">P99</span>
+                  <strong id="loadP99" class="stat-value">0 ms</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Elapsed</span>
+                  <strong id="loadElapsed" class="stat-value">0 ms</strong>
+                </div>
+                <div class="stat-card highlight">
+                  <span class="stat-label">Success Rate</span>
+                  <strong id="loadSuccessRate" class="stat-value">0%</strong>
+                </div>
+                <div class="stat-card highlight">
+                  <span class="stat-label">Throughput</span>
+                  <strong id="loadThroughput" class="stat-value">0 req/s</strong>
+                </div>
+              </div>
+
+              <div class="results-box">
+                <div class="stat-label">Run Summary</div>
+                <pre id="loadSummary" class="entry-body results-body">Load tester is idle. Configure a run and press Start.</pre>
+              </div>
+
+              <div class="results-box">
+                <div class="stat-label">Last Error</div>
+                <pre id="loadLastError" class="entry-body results-body">none</pre>
+              </div>
+            </article>
+          </div>
+          </section>
+
+          <section id="tab-push" class="tab-panel" data-tab="push">
+          <article class="card panel">
+            <div class="panel-head">
+              <div>
+                <h2>Push Tokens</h2>
+                <p class="panel-sub">Register or remove push token bindings.</p>
+              </div>
+              <span class="chip">Device</span>
+            </div>
+
+            <label class="field" for="pushDeviceId">
+              <span>Device ID</span>
+              <input id="pushDeviceId" placeholder="phone1" />
+            </label>
+            <label class="field" for="pushPlatform">
+              <span>Platform</span>
+              <select id="pushPlatform">
+                <option value="android">android</option>
+                <option value="ios">ios</option>
+              </select>
+            </label>
+            <label class="field" for="pushToken">
+              <span>Token</span>
+              <input id="pushToken" placeholder="push-token" />
+            </label>
+            <button id="btnRegisterPush" class="btn primary full">Register Push Token</button>
+            <code class="endpoint">PUT /v1/users/me/devices/{device_id}/push-token</code>
+            <button id="btnDeletePush" class="btn ghost full">Delete Push Token</button>
+            <code class="endpoint">DELETE /v1/users/me/devices/{device_id}/push-token</code>
+          </article>
+          </section>
+
+          <section id="tab-ops" class="tab-panel" data-tab="ops">
+          <article class="card panel">
+            <div class="panel-head">
+              <div>
+                <h2>Service Endpoints</h2>
+                <p class="panel-sub">Operational health checks plus live runtime stats from `/metrics`.</p>
+              </div>
+              <span class="chip">Ops</span>
+            </div>
+            <div class="service-grid service-grid-tight">
+              <button id="btnLivez" class="btn secondary full">GET /livez</button>
+              <button id="btnReadyz" class="btn secondary full">GET /readyz</button>
+              <button id="btnHealthz" class="btn secondary full">GET /healthz</button>
+              <button id="btnMetrics" class="btn secondary full">GET /metrics</button>
+              <button id="btnRefreshRuntime" class="btn primary full">Refresh Runtime</button>
+            </div>
+
+            <div class="stats-grid runtime-grid">
+              <div class="stat-card highlight">
+                <span class="stat-label">CPU Usage</span>
+                <strong id="opsCpuUsage" class="stat-value">sampling...</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">CPU Time</span>
+                <strong id="opsCpuSeconds" class="stat-value">0 s</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Heap Live</span>
+                <strong id="opsMemoryHeap" class="stat-value">0 B</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">RAM Total</span>
+                <strong id="opsMemoryTotal" class="stat-value">0 B</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Goroutines</span>
+                <strong id="opsGoroutines" class="stat-value">0</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Threads</span>
+                <strong id="opsThreads" class="stat-value">0</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">GC Cycles</span>
+                <strong id="opsGC" class="stat-value">0</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">HTTP Requests</span>
+                <strong id="opsRequests" class="stat-value">0</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Uptime</span>
+                <strong id="opsUptime" class="stat-value">0 s</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">GOMAXPROCS</span>
+                <strong id="opsGomaxprocs" class="stat-value">0</strong>
+              </div>
+            </div>
+
+            <div class="results-box">
+              <div class="stat-label">Runtime Summary</div>
+              <pre id="opsSummary" class="entry-body results-body">Open the Ops tab or press Refresh Runtime to sample /metrics.</pre>
+            </div>
+          </article>
+          </section>
+        </section>
+
+        <aside class="logs-pane">
+          <article class="card panel log-wrap">
+            <div class="log-head">
+              <div>
+                <h2>Event Log</h2>
+                <p class="panel-sub">Timeline with filter, search, and export.</p>
+              </div>
+              <div class="log-summary" role="group" aria-label="Quick log filters">
+                <button id="logFilterAll" class="log-stat active" data-level="all" type="button">
+                  <span>All</span>
+                  <strong id="logAllCount">0</strong>
+                </button>
+                <button id="logFilterSuccess" class="log-stat" data-level="success" type="button">
+                  <span>Success</span>
+                  <strong id="logSuccessCount">0</strong>
+                </button>
+                <button id="logFilterInfo" class="log-stat" data-level="info" type="button">
+                  <span>Info</span>
+                  <strong id="logInfoCount">0</strong>
+                </button>
+                <button id="logFilterWarn" class="log-stat" data-level="warn" type="button">
+                  <span>Warn</span>
+                  <strong id="logWarnCount">0</strong>
+                </button>
+                <button id="logFilterError" class="log-stat" data-level="error" type="button">
+                  <span>Error</span>
+                  <strong id="logErrorCount">0</strong>
+                </button>
+              </div>
+              <div class="log-actions">
+                <span id="logCount" class="pill">0 shown / 0 total</span>
+                <input id="logSearch" class="log-search" placeholder="Search kind, payload, room, user, error..." aria-label="Search logs" />
+                <button id="btnAutoScroll" class="btn ghost compact">Auto Scroll: On</button>
+                <button id="btnExportLog" class="btn ghost compact">Export</button>
+                <button id="btnClearLog" class="btn ghost compact">Clear</button>
+              </div>
+            </div>
+            <div id="events" class="log" role="log" aria-live="polite"></div>
+          </article>
+        </aside>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+    <script src="app.js?v=9"></script>
+  </body>
+</html>
